@@ -146,6 +146,10 @@ func (p Policy) EntropyBits() float64 {
 	return math.Log2(float64(n)) * float64(p.Length)
 }
 
+func (p Policy) describe() string {
+	return fmt.Sprintf("pool=%d, length=%d", len(p.pool()), p.Length)
+}
+
 func appendRandom(dst *[]byte, set string, n int) error {
 	for i := 0; i < n; i++ {
 		idx, err := secureIntn(len(set))

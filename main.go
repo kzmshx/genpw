@@ -1,8 +1,8 @@
-// genpw is a small, dependency-free password generator.
+// genpw is a small, dependency-free password and passphrase generator.
 //
 // Randomness comes exclusively from crypto/rand and index selection is
 // unbiased. By default all four character classes are enabled; disable any
-// with the --no-* flags.
+// with the --no-* flags. Use --passphrase for Diceware-style word phrases.
 package main
 
 import (
@@ -14,6 +14,14 @@ import (
 	"runtime"
 	"strings"
 )
+
+// generator is implemented by both Policy (passwords) and Passphrase.
+type generator interface {
+	Validate() error
+	Generate() (string, error)
+	EntropyBits() float64
+	describe() string
+}
 
 func main() {
 	if err := run(os.Args[1:], os.Stdout); err != nil {
@@ -40,12 +48,16 @@ func run(args []string, out io.Writer) error {
 		minSymbols  int
 		showEntropy bool
 		copyClip    bool
+		passphrase  bool
+		words       int
+		separator   string
+		capitalize  bool
 	)
 	// Both short and long forms bind to the same variable.
 	fs.IntVar(&length, "length", 20, "password length")
 	fs.IntVar(&length, "l", 20, "password length (shorthand)")
-	fs.IntVar(&count, "count", 1, "number of passwords to generate")
-	fs.IntVar(&count, "n", 1, "number of passwords (shorthand)")
+	fs.IntVar(&count, "count", 1, "number of outputs to generate")
+	fs.IntVar(&count, "n", 1, "number of outputs (shorthand)")
 	fs.BoolVar(&noLower, "no-lower", false, "exclude lowercase letters")
 	fs.BoolVar(&noUpper, "no-upper", false, "exclude uppercase letters")
 	fs.BoolVar(&noDigits, "no-digits", false, "exclude digits")
@@ -57,35 +69,46 @@ func run(args []string, out io.Writer) error {
 	fs.IntVar(&minSymbols, "min-symbols", 0, "minimum number of symbols")
 	fs.BoolVar(&showEntropy, "entropy", false, "print entropy (bits) and exit")
 	fs.BoolVar(&copyClip, "copy", false, "copy to clipboard, do not print")
+	fs.BoolVar(&passphrase, "passphrase", false, "generate a Diceware passphrase")
+	fs.BoolVar(&passphrase, "p", false, "generate a passphrase (shorthand)")
+	fs.IntVar(&words, "words", 6, "number of words (passphrase mode)")
+	fs.IntVar(&words, "w", 6, "number of words (shorthand)")
+	fs.StringVar(&separator, "sep", "-", "word separator (passphrase mode)")
+	fs.BoolVar(&capitalize, "capitalize", false, "capitalize each word (passphrase mode)")
 
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 
-	p := Policy{
-		Length:      length,
-		Lower:       !noLower,
-		Upper:       !noUpper,
-		Digits:      !noDigits,
-		Symbols:     !noSymbols,
-		SymbolSet:   symbolSet,
-		Exclude:     exclude,
-		NoAmbiguous: noAmbiguous,
-		MinDigits:   minDigits,
-		MinSymbols:  minSymbols,
+	var gen generator
+	if passphrase {
+		gen = Passphrase{Words: words, Separator: separator, Capitalize: capitalize}
+	} else {
+		gen = Policy{
+			Length:      length,
+			Lower:       !noLower,
+			Upper:       !noUpper,
+			Digits:      !noDigits,
+			Symbols:     !noSymbols,
+			SymbolSet:   symbolSet,
+			Exclude:     exclude,
+			NoAmbiguous: noAmbiguous,
+			MinDigits:   minDigits,
+			MinSymbols:  minSymbols,
+		}
 	}
-	if err := p.Validate(); err != nil {
+	if err := gen.Validate(); err != nil {
 		return err
 	}
 
 	if showEntropy {
-		fmt.Fprintf(out, "%.1f bits (pool=%d, length=%d)\n", p.EntropyBits(), len(p.pool()), p.Length)
-		return nil
+		_, err := fmt.Fprintf(out, "%.1f bits (%s)\n", gen.EntropyBits(), gen.describe())
+		return err
 	}
 
 	pwds := make([]string, 0, count)
 	for i := 0; i < count; i++ {
-		s, err := p.Generate()
+		s, err := gen.Generate()
 		if err != nil {
 			return err
 		}
@@ -99,12 +122,12 @@ func run(args []string, out io.Writer) error {
 		if err := clipboardCopy(pwds[0]); err != nil {
 			return err
 		}
-		fmt.Fprintf(out, "copied to clipboard (%.1f bits)\n", p.EntropyBits())
-		return nil
+		_, err := fmt.Fprintf(out, "copied to clipboard (%.1f bits)\n", gen.EntropyBits())
+		return err
 	}
 
-	fmt.Fprintln(out, strings.Join(pwds, "\n"))
-	return nil
+	_, err := fmt.Fprintln(out, strings.Join(pwds, "\n"))
+	return err
 }
 
 // clipboardCopy shells out to the platform clipboard tool (zero Go deps).
@@ -132,12 +155,12 @@ func clipboardCopy(s string) error {
 }
 
 func usage(fs *flag.FlagSet) {
-	fmt.Fprint(fs.Output(), `genpw - secure password generator
+	_, _ = fmt.Fprint(fs.Output(), `genpw - secure password & passphrase generator
 
 Usage:
   genpw [flags]
 
-Examples:
+Password examples:
   genpw                       20 chars, all classes
   genpw -l 32                 32 chars
   genpw -n 5                  5 candidates
@@ -147,6 +170,11 @@ Examples:
   genpw --min-digits 2 --min-symbols 1
   genpw --copy                copy instead of print
   genpw --entropy             show strength only
+
+Passphrase examples:
+  genpw -p                    6-word Diceware passphrase
+  genpw -p -w 8 --capitalize  8 capitalized words
+  genpw -p --sep .            dot-separated
 
 Flags:
 `)
