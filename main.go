@@ -2,10 +2,11 @@
 //
 // Randomness comes exclusively from crypto/rand and index selection is
 // unbiased. By default all four character classes are enabled; disable any
-// with the --no-* flags.
+// with the -no-* flags.
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -59,6 +60,10 @@ func run(args []string, out io.Writer) error {
 	fs.BoolVar(&copyClip, "copy", false, "copy to clipboard, do not print")
 
 	if err := fs.Parse(args); err != nil {
+		// -h/-help: usage was already printed by Parse; exit cleanly.
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
 		return err
 	}
 
@@ -94,7 +99,7 @@ func run(args []string, out io.Writer) error {
 
 	if copyClip {
 		if count != 1 {
-			return fmt.Errorf("--copy requires --count 1")
+			return fmt.Errorf("-copy requires -count 1")
 		}
 		if err := clipboardCopy(pwds[0]); err != nil {
 			return err
@@ -121,7 +126,7 @@ func clipboardCopy(s string) error {
 			name, args = "xclip", []string{"-selection", "clipboard"}
 		}
 	default:
-		return fmt.Errorf("--copy not supported on %s", runtime.GOOS)
+		return fmt.Errorf("-copy not supported on %s", runtime.GOOS)
 	}
 	cmd := exec.Command(name, args...)
 	cmd.Stdin = strings.NewReader(s)
@@ -131,6 +136,10 @@ func clipboardCopy(s string) error {
 	return nil
 }
 
+// usage is hand-written rather than using fs.PrintDefaults(): Go's flag package
+// has no real long-option concept (-x and --x are equivalent, help always
+// renders single-dash), and PrintDefaults lists each shorthand on its own line
+// (e.g. -l and -length separately). Keep this list in sync with run().
 func usage(fs *flag.FlagSet) {
 	_, _ = fmt.Fprint(fs.Output(), `genpw - secure password generator
 
@@ -141,14 +150,26 @@ Examples:
   genpw                       20 chars, all classes
   genpw -l 32                 32 chars
   genpw -n 5                  5 candidates
-  genpw --no-symbols          alphanumeric only
-  genpw --symbols '!@#$%'     custom symbol set
-  genpw --no-ambiguous        drop il1LoO0
-  genpw --min-digits 2 --min-symbols 1
-  genpw --copy                copy instead of print
-  genpw --entropy             show strength only
+  genpw -no-symbols           alphanumeric only
+  genpw -symbols '!@#$%'      custom symbol set
+  genpw -no-ambiguous         drop il1LoO0
+  genpw -min-digits 2 -min-symbols 1
+  genpw -copy                 copy instead of print
+  genpw -entropy              show strength only
 
 Flags:
+  -l, -length int    password length (default 20)
+  -n, -count int     number of passwords (default 1)
+  -no-lower          exclude lowercase letters
+  -no-upper          exclude uppercase letters
+  -no-digits         exclude digits
+  -no-symbols        exclude symbols
+  -symbols string    custom symbol set (overrides default)
+  -exclude string    characters to exclude from the pool
+  -no-ambiguous      exclude confusable chars (il1LoO0)
+  -min-digits int    minimum number of digits
+  -min-symbols int   minimum number of symbols
+  -copy              copy to clipboard, do not print
+  -entropy           print entropy (bits) and exit
 `)
-	fs.PrintDefaults()
 }

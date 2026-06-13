@@ -10,7 +10,7 @@ A small, dependency-free password generator CLI.
 
 - Randomness from `crypto/rand` only (CSPRNG).
 - Unbiased selection — no modulo bias (`crypto/rand.Int` rejection sampling).
-- `--min-*` constraints enforced via rejection sampling, preserving uniformity.
+- `-min-*` constraints enforced via rejection sampling, preserving uniformity.
 - Zero external dependencies (Go standard library only).
 
 ## Install
@@ -27,21 +27,21 @@ Or download a prebuilt binary from the [releases page](https://github.com/kzmshx
 genpw                          # 20 chars, all classes (~128 bits)
 genpw -l 32                    # length 32
 genpw -n 5                     # 5 candidates
-genpw --no-symbols             # alphanumeric only
-genpw --symbols '!@#$%'        # custom symbol set
-genpw --no-ambiguous           # drop il1LoO0
-genpw --min-digits 2 --min-symbols 1
-genpw --copy                   # copy to clipboard, do not print
-genpw --entropy                # show strength only, no generation
+genpw -no-symbols              # alphanumeric only
+genpw -symbols '!@#$%'         # custom symbol set
+genpw -no-ambiguous            # drop il1LoO0
+genpw -min-digits 2 -min-symbols 1
+genpw -copy                    # copy to clipboard, do not print
+genpw -entropy                 # show strength only, no generation
 ```
 
-Run `genpw -h` for the full flag list.
+Flags use Go's standard single-dash style (`-length`); `-h` lists them all.
 
 ## Notes
 
-- `--copy` shells out to `pbcopy` (macOS) or `wl-copy`/`xclip` (Linux); it
+- `-copy` shells out to `pbcopy` (macOS) or `wl-copy`/`xclip` (Linux); it
   never prints the secret to stdout.
-- `--entropy` reports `log2(pool) * length`; `--min-*` constraints make the
+- `-entropy` reports `log2(pool) * length`; `-min-*` constraints make the
   true value marginally lower, so the figure is an upper bound.
 
 ## License
