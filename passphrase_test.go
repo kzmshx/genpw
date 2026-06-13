@@ -18,25 +18,29 @@ func TestWordlistLoaded(t *testing.T) {
 }
 
 func TestPassphraseWordCount(t *testing.T) {
+	// Use "/" as the separator: wordlist words contain only [a-z-], so "/"
+	// cannot appear inside a word and split is unambiguous (unlike "-", which
+	// occurs in words such as "yo-yo").
 	for _, n := range []int{1, 4, 6, 10} {
-		pp := Passphrase{Words: n, Separator: "-"}
+		pp := Passphrase{Words: n, Separator: "/"}
 		s, err := pp.Generate()
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := len(strings.Split(s, "-")); got != n {
+		if got := len(strings.Split(s, "/")); got != n {
 			t.Errorf("words %d: got %d parts (%q)", n, got, s)
 		}
 	}
 }
 
 func TestPassphraseCapitalize(t *testing.T) {
-	pp := Passphrase{Words: 6, Separator: "-", Capitalize: true}
+	// "/" separator: see TestPassphraseWordCount for why "-" is unsafe here.
+	pp := Passphrase{Words: 6, Separator: "/", Capitalize: true}
 	s, err := pp.Generate()
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, w := range strings.Split(s, "-") {
+	for _, w := range strings.Split(s, "/") {
 		if w == "" || w[0] < 'A' || w[0] > 'Z' {
 			t.Fatalf("word not capitalized: %q in %q", w, s)
 		}
