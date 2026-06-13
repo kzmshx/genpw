@@ -30,6 +30,12 @@ archives:
 checksum:
   name_template: checksums.txt
 
+release:
+  # Publish as a draft so all assets are attached before the release is made
+  # public. The workflow then flips the draft to published, which is the flow
+  # GitHub recommends for immutable releases (assets locked only at publish).
+  draft: true
+
 changelog:
   sort: asc
   filters:
