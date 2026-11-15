@@ -1,0 +1,38 @@
+version: 2
+
+# All version updates (Go modules and GitHub Actions, major included) arrive
+# as one weekly PR. If CI fails, the whole batch waits until it is fixed.
+# Security updates are separate: they open their own PRs when an advisory
+# appears.
+multi-ecosystem-groups:
+  weekly:
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Asia/Tokyo
+
+updates:
+  # genpw itself has no dependencies today; this entry covers any added later.
+  - package-ecosystem: gomod
+    directory: /
+    patterns: ["*"]
+    multi-ecosystem-group: weekly
+
+  # CI tools. Go records `tool` modules as `// indirect`, which Dependabot
+  # skips by default, so allow them by name. Their own dependencies follow
+  # whatever the tool requires.
+  - package-ecosystem: gomod
+    directory: /tools
+    patterns: ["*"]
+    multi-ecosystem-group: weekly
+    allow:
+      - dependency-name: honnef.co/go/tools
+        dependency-type: all
+      - dependency-name: golang.org/x/vuln
+        dependency-type: all
+
+  # Updates the version in the workflows and actions.lock together.
+  - package-ecosystem: github-actions
+    directory: /
+    patterns: ["*"]
+    multi-ecosystem-group: weekly
