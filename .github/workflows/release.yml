@@ -16,14 +16,14 @@ jobs:
     steps:
       # Each action's commit SHA is pinned in .github/workflows/actions.lock
       # (supply-chain hardening); see the note in ci.yml.
-      - uses: actions/checkout@v4.3.1
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-go@v5.6.0
+      - uses: actions/setup-go@v7.0.0
         with:
           go-version-file: go.mod
-      - uses: goreleaser/goreleaser-action@v6.4.0
+      - uses: goreleaser/goreleaser-action@v7.3.0
         with:
           # Pin the GoReleaser binary to an exact version (not a floating range).
           version: v2.16.0
