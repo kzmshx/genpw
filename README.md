@@ -19,8 +19,6 @@ A small, dependency-free password generator CLI.
 go install github.com/kzmshx/genpw@latest
 ```
 
-Or download a prebuilt binary from the [releases page](https://github.com/kzmshx/genpw/releases).
-
 ## Usage
 
 ```sh
