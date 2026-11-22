@@ -17,6 +17,10 @@ updates:
     directory: /
     patterns: ["*"]
     multi-ecosystem-group: weekly
+    # fix: release-please treats the update as a patch release
+    commit-message:
+      prefix: fix
+      include: scope
 
   # CI tools. Go records `tool` modules as `// indirect`, which Dependabot
   # skips by default, so allow them by name. Their own dependencies follow
@@ -25,6 +29,10 @@ updates:
     directory: /tools
     patterns: ["*"]
     multi-ecosystem-group: weekly
+    # fix: release-please treats the update as a patch release
+    commit-message:
+      prefix: fix
+      include: scope
     allow:
       - dependency-name: honnef.co/go/tools
         dependency-type: all
@@ -36,3 +44,7 @@ updates:
     directory: /
     patterns: ["*"]
     multi-ecosystem-group: weekly
+    # fix: release-please treats the update as a patch release
+    commit-message:
+      prefix: fix
+      include: scope
